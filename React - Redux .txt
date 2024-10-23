@@ -1,0 +1,10 @@
+Redux
+
+https://redux.js.org/introduction/getting-started
+
+--------------------------------------------------------------------
+
+
+React
+
+https://react.dev/learn

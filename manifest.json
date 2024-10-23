@@ -1,0 +1,10 @@
+{
+    "name": "Bestimmen Sie Ihre Teilnahme",
+    "short_name": "Bestimmen Sie Ihre Teilnahme",
+    "theme_color": "#343a40",
+    "background_color": "#343a40",
+    "display": "fullscreen",
+    "orientation": "portrait",
+    "scope": "/",
+    "start_url": "/"
+  }

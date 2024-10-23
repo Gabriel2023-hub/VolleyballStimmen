@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Umfrage: Volleyball Teilnahme</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="manifest" href="manifest.json">
+
+    <style>
+        body {
+            height: 100vh;
+            background-color: #343a40;
+            color: rgb(12, 12, 12);
+        }
+        #survey-container {
+            max-width: 600px;
+            width: 100%;
+            margin: 20px;
+        }
+        .progress {
+            height: 30px;
+        }
+        .progress-bar {
+            line-height: 30px;
+        }
+        .name-lists {
+            display: flex;
+            justify-content: space-between;
+        }
+        .name-list {
+            width: 30%;
+        }
+        /* Hintergrundfarben für Namenlisten */
+        .yes-name {
+            background-color: #28a745;
+            color: white;
+        }
+        .no-name {
+            background-color: #dc3545;
+            color: white;
+        }
+        .other-name {
+            background-color: #ffc107;
+            color: white;
+        }
+
+        .video-effect-nein {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 300px;
+            height: auto;
+            border-radius: 50%;
+            overflow: hidden;
+            display: none;
+            z-index: 9999;
+            animation: fireAnimation 2s ease-out forwards;
+        }
+
+        @keyframes fireAnimation {
+            0% { opacity: 0; transform: scale(0); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .video-effect-ja {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            display: none;
+        }
+
+        #chart-container {
+            max-width: 600px;
+            width: 100%;
+            margin: 20px auto;
+            display: none;
+        }
+
+        /* Modal-Stile */
+        .modal-content {
+            background-color: #f8f9fa;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #cccccc;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f1f1;
+            color: #333;
+        }
+    </style>
+</head>
+<body class="d-flex justify-content-center align-items-center">
+    <div id="survey-container" class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 id="survey-title">Teilnahme an Volleyball</h1>
+                <select id="title-select" class="form-select w-auto" onchange="updateTitle()">
+                    <option value="Teilnahme an Volleyball">Teilnahme an Volleyball</option>
+                    <option value="Teilnahme an Fußball">Teilnahme an Fußball</option>
+                    <option value="Teilnahme an Basketball">Teilnahme an Basketball</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body text-center">
+            <input type="text" id="name-input" class="form-control mb-3" placeholder="Dein Name">
+            <input type="date" id="date-input" class="form-control mb-3">
+            <select id="response-select" class="form-select mb-3">
+                <option value="Ja">Ja</option>
+                <option value="Nein">Nein</option>
+                <option value="Diesmal kann ich nicht">Diesmal kann ich nicht</option>
+                <option value="Ich bin heute beschäftigt">Ich bin heute beschäftigt</option>
+                <option value="Ich habe heute keine Lust">Ich habe heute keine Lust</option>
+                <option value="Ich muss lernen">Ich muss lernen</option>
+                <option value="Ich arbeite und kann nicht kommen">Ich arbeite und kann nicht kommen</option>
+                <option value="Ich bin im Urlaub">Ich bin im Urlaub</option>
+                <option value="Ich bin nicht in der Gegend">Ich bin nicht in der Gegend</option>
+            </select>
+            <button id="vote-button" class="btn btn-primary mb-2" onclick="vote()">Abstimmen</button>
+        </div>
+        <div class="card-footer">
+            <div class="mb-2">Ja: <span id="yes-count">0</span></div>
+            <div class="progress mb-2">
+                <div id="yes-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%;"></div>
+            </div>
+            <div class="mb-2">Nein: <span id="no-count">0</span></div>
+            <div class="progress mb-2">
+                <div id="no-bar" class="progress-bar bg-danger" role="progressbar" style="width: 0%;"></div>
+            </div>
+            <div class="mb-2">Andere: <span id="other-count">0</span></div>
+            <div class="progress mb-2">
+                <div id="other-bar" class="progress-bar bg-warning" role="progressbar" style="width: 0%;"></div>
+            </div>
+            <button id="show-names-button" class="btn btn-info mb-3" data-bs-toggle="modal" data-bs-target="#namesModal">Anzeigen der Teilnehmer</button>
+            <button id="finish-button" class="btn btn-primary mb-3" onclick="showChart()">Fertig</button>
+        </div>
+    </div>
+
+    <div id="chart-container">
+        <h1 id="chart-title">Ergebnisse</h1>
+        <canvas id="results-chart"></canvas>
+        <button id="back-button" class="btn btn-secondary mt-3" onclick="backToSurvey()">Zurück zur Umfrage</button>
+    </div>
+
+    <!-- Modal für Teilnehmer -->
+    <div class="modal fade" id="namesModal" tabindex="-1" aria-labelledby="namesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="namesModalLabel">Teilnehmer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Ja:</h6>
+                    <table class="table table-sm table-striped table-bordered yes-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Datum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="yes-names"></tbody>
+                    </table>
+
+                    <h6>Nein:</h6>
+                    <table class="table table-sm table-striped table-bordered no-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Datum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="no-names"></tbody>
+                    </table>
+
+                    <h6>Andere:</h6>
+                    <table class="table table-sm table-striped table-bordered other-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Grund & Datum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="other-names"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <video id="no-effect" class="video-effect-nein" muted>
+        <source src="tiny_nein.mp4" type="video/mp4">
+    </video>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-confetti@latest/dist/js-confetti.browser.js"></script>
+    <script>
+        let participants = [];
+        const jsConfetti = new JSConfetti();
+
+        function vote() {
+            const nameInput = document.getElementById('name-input');
+            const dateInput = document.getElementById('date-input');
+            const name = nameInput.value.trim();
+            const response = document.getElementById('response-select').value;
+            const date = dateInput.value ? new Date(dateInput.value).toLocaleDateString() : new Date().toLocaleDateString();
+
+            if (!name) {
+                alert("Bitte gib deinen Namen ein.");
+                return;
+            }
+
+            participants.push({ name, date, response });
+
+            nameInput.value = ''; // Eingabefeld leeren
+            dateInput.value = ''; // Datumseingabefeld leeren
+
+            updateCounts();
+            updateParticipantList();
+
+            if (response === 'Ja') {
+                jsConfetti.addConfetti();
+            } else if (response === 'Nein') {
+                showNoEffect();
+            }
+        }
+
+        function updateCounts() {
+            const yesCount = participants.filter(p => p.response === 'Ja').length;
+            const noCount = participants.filter(p => p.response === 'Nein').length;
+            const otherCount = participants.filter(p => p.response !== 'Ja' && p.response !== 'Nein').length;
+
+            document.getElementById('yes-count').textContent = yesCount;
+            document.getElementById('no-count').textContent = noCount;
+            document.getElementById('other-count').textContent = otherCount;
+
+            document.getElementById('yes-bar').style.width = `${(yesCount / participants.length) * 100}%`;
+            document.getElementById('no-bar').style.width = `${(noCount / participants.length) * 100}%`;
+            document.getElementById('other-bar').style.width = `${(otherCount / participants.length) * 100}%`;
+        }
+
+        function updateParticipantList() {
+            const yesNames = document.getElementById('yes-names');
+            const noNames = document.getElementById('no-names');
+            const otherNames = document.getElementById('other-names');
+
+            yesNames.innerHTML = '';
+            noNames.innerHTML = '';
+            otherNames.innerHTML = '';
+
+            participants.forEach(participant => {
+                const row = document.createElement('tr');
+                const nameCell = document.createElement('td');
+                const dateCell = document.createElement('td');
+
+                nameCell.textContent = participant.name;
+                dateCell.textContent = participant.date;
+
+                row.appendChild(nameCell);
+                row.appendChild(dateCell);
+
+                if (participant.response === 'Ja') {
+                    row.classList.add('yes-name');
+                    yesNames.appendChild(row);
+                } else if (participant.response === 'Nein') {
+                    row.classList.add('no-name');
+                    noNames.appendChild(row);
+                } else {
+                    row.classList.add('other-name');
+                    const reasonCell = document.createElement('td');
+                    reasonCell.textContent = participant.response;
+                    row.appendChild(reasonCell);
+                    otherNames.appendChild(row);
+                }
+            });
+        }
+
+        function updateTitle() {
+            const titleSelect = document.getElementById('title-select');
+            const surveyTitle = document.getElementById('survey-title');
+            surveyTitle.textContent = titleSelect.value;
+        }
+
+        function showChart() {
+            document.getElementById('survey-container').style.display = 'none';
+            document.getElementById('chart-container').style.display = 'block';
+
+            const yesCount = participants.filter(p => p.response === 'Ja').length;
+            const noCount = participants.filter(p => p.response === 'Nein').length;
+            const otherCount = participants.filter(p => p.response !== 'Ja' && p.response !== 'Nein').length;
+
+            const ctx = document.getElementById('results-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Ja', 'Nein', 'Andere'],
+                    datasets: [{
+                        data: [yesCount, noCount, otherCount],
+                        backgroundColor: ['#28a745', '#dc3545', '#ffc107']
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+
+            // Verstecke das Chart-Container nach 5 Sekunden
+            setTimeout(() => {
+                document.getElementById('chart-container').style.display = 'none';
+                document.getElementById('survey-container').style.display = 'block';
+            }, 5000);
+        }
+
+        function backToSurvey() {
+            document.getElementById('survey-container').style.display = 'block';
+            document.getElementById('chart-container').style.display = 'none';
+        }
+
+        function showNoEffect() {
+            const noEffect = document.getElementById('no-effect');
+            noEffect.style.display = 'block'; // Zeigt das Video an
+
+            noEffect.play(); // Spielt das Video ab
+
+            // Versteckt das Video nach dem Ende
+            noEffect.onended = function () {
+                noEffect.style.display = 'none';
+            };
+        }
+    </script>
+</body>
+</html>
